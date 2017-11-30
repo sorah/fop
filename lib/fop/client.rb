@@ -29,6 +29,7 @@ module Fop
   class Error < StandardError; end
   class DataParseError < Error; end
   class InvalidAirport < Error; end
+  class ConditionError < Error; end
 
   ENDPOINT_URI = URI("https://www.jal.co.jp/cgi-bin/jal/milesearch/save/flt_mile_save.cgi")
   DATA_JS_URI = URI("https://www.jal.co.jp/jmb/milesearch/js/mile_search_jp.js")
@@ -87,6 +88,10 @@ module Fop
     end
 
     def parse_result(page)
+      if page.inner_text.include?("ご入力いただいた条件では検索できませんでした")
+        raise ConditionError, "Calculation not available for given query"
+      end
+
       miles, fop = page.search('.milecount').map{ |_| _.inner_text.strip.gsub(/,/, '').to_i }
       standard_flight_miles = page.search('.milecount')[0].parent.children[1].inner_text.gsub(/[^\d]+/,'').to_i
 
@@ -143,7 +148,7 @@ module Fop
     end
 
     def valid_dom_classes
-      @valid_dom_classes ||+ form_page.search('#domClass option').map do |option|
+      @valid_dom_classes ||= form_page.search('#domClass option').map do |option|
         SeatClass.new(option['value'], option.inner_text.strip)
       end
     end
@@ -182,7 +187,7 @@ module Fop
       raise DataParseError, "Failed to extract #{variable.inspect} from data_js" unless m
       js = m[1]
       json_like = js.
-        gsub(/^\s*"(.+?)"\s*:|^\s*([^"].+?[^"])\s*:/,'"\1" :')
+        gsub(/^\s*"(.+?)"\s*:|^\s*(.+?)\s*:/,'"\1\2":')
       JSON.parse json_like
     rescue JSON::ParserError
       raise DataParseError, "Failed to parse #{variable.inspect} from data_js"
