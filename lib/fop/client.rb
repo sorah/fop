@@ -194,15 +194,15 @@ module Fop
     end
 
     def post_form(data)
-      Nokogiri::HTML(Net::HTTP.post_form(ENDPOINT_URI, data).tap(&:value).body.encode("UTF-8", "Shift_JIS"))
+      Nokogiri::HTML(Net::HTTP.post_form(ENDPOINT_URI, data).tap(&:value).body)
     end
 
     def form_page
-      @form_page ||= Nokogiri::HTML(open(ENDPOINT_URI, 'r', &:read).encode("UTF-8", "Shift_JIS"))
+      @form_page ||= Nokogiri::HTML(open(ENDPOINT_URI, 'r', &:read))
     end
 
     def data_js
-      @data_js ||= open(DATA_JS_URI, 'r', &:read).encode("UTF-8", "Shift_JIS")
+      @data_js ||= open(DATA_JS_URI, 'r', &:read)
     end
   end
 end
